@@ -1,2 +1,1 @@
-# Create and write your active key into key.txt
-echo "ANXHU-PROXY-TRIAL" > key.txt
+ANXHU-PROXY
