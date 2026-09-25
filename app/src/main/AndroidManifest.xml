@@ -3,6 +3,9 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    
+    <!-- CRITICAL: Required for Shizuku to recognize and prompt permission -->
+    <uses-permission android:name="moe.shizuku.manager.permission.API_V23" />
 
     <application
         android:allowBackup="true"
@@ -21,7 +24,6 @@
             </intent-filter>
         </activity>
 
-        <!-- CRITICAL: Shizuku User Service must be declared here so it can bind -->
         <service
             android:name=".FileInjectorService"
             android:enabled="true"
