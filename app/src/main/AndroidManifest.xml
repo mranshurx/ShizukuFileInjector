@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- REQUIRED FOR ONLINE KEY VERIFICATION -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
@@ -21,6 +20,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- CRITICAL: Shizuku User Service must be declared here so it can bind -->
+        <service
+            android:name=".FileInjectorService"
+            android:enabled="true"
+            android:exported="true"
+            android:process=":remote" />
 
     </application>
 

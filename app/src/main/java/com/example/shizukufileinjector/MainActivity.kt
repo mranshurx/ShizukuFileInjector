@@ -23,8 +23,8 @@ class MainActivity : AppCompatActivity() {
     private var service: IFileInjectorService? = null
     private val requestCode = 1000
 
-    // Your live online raw text file URL containing the valid key
-    private val remoteKeyUrl = "https://raw.githubusercontent.com/mranshurx/ShizukuFileInjector/refs/heads/main/key.txt"
+    // Standard clean raw GitHub URL
+    private val remoteKeyUrl = "https://raw.githubusercontent.com/mranshurx/ShizukuFileInjector/main/key.txt"
 
     private val permissionListener = Shizuku.OnRequestPermissionResultListener { code, grantResult ->
         if (code == requestCode) {
@@ -55,12 +55,12 @@ class MainActivity : AppCompatActivity() {
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName, binder: IBinder) {
             service = IFileInjectorService.Stub.asInterface(binder)
-            log("Privileged user service connected.")
+            log("SUCCESS: Privileged service connected!")
         }
 
         override fun onServiceDisconnected(name: ComponentName) {
             service = null
-            log("Privileged user service disconnected.")
+            log("WARNING: Privileged service disconnected.")
         }
     }
 
@@ -103,7 +103,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        refreshStatus() // Instantly re-checks Shizuku status every time app comes to foreground
+        refreshStatus()
     }
 
     override fun onDestroy() {
@@ -158,12 +158,13 @@ class MainActivity : AppCompatActivity() {
                     val currentServerKey = connection.inputStream.bufferedReader().use { it.readText() }.trim()
 
                     runOnUiThread {
+                        log("Server returned: '$currentServerKey'") // Debug log to see what it downloaded
                         if (inputKey == currentServerKey && inputKey.isNotEmpty()) {
-                            log("SUCCESS: Key authorized by server! App unlocked.")
+                            log("SUCCESS: Key authorized! App unlocked.")
                             btnInject.isEnabled = true
                             btnOfflineMode.isEnabled = true
                         } else {
-                            log("ERROR: Invalid or expired key! Access denied.")
+                            log("ERROR: Key mismatch! Access denied.")
                             btnInject.isEnabled = false
                             btnOfflineMode.isEnabled = false
                         }
@@ -209,7 +210,7 @@ class MainActivity : AppCompatActivity() {
     private fun doInjectAssets() {
         val svc = service
         if (svc == null) {
-            log("Not connected to service yet.")
+            log("ERROR: Service not connected yet! Grant Shizuku permission first.")
             return
         }
 
@@ -235,7 +236,7 @@ class MainActivity : AppCompatActivity() {
     private fun doOfflineMode() {
         val svc = service
         if (svc == null) {
-            log("Not connected to service yet.")
+            log("ERROR: Service not connected yet! Grant Shizuku permission first.")
             return
         }
 
@@ -261,7 +262,7 @@ class MainActivity : AppCompatActivity() {
     private fun doDiagnostics() {
         val svc = service
         if (svc == null) {
-            log("Not connected to service yet.")
+            log("ERROR: Service not connected yet!")
             return
         }
         
