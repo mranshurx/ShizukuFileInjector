@@ -1,0 +1,2 @@
+# Create and write your active key into key.txt
+echo "ANXHU-PRO-2026" > key.txt
