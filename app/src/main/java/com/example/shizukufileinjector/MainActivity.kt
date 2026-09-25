@@ -29,10 +29,10 @@ class MainActivity : AppCompatActivity() {
         if (code == requestCode) {
             runOnUiThread {
                 if (grantResult == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                    log("Shizuku permission granted.")
+                    log("SUCCESS: Shizuku permission granted!")
                     bindService()
                 } else {
-                    log("Shizuku permission denied.")
+                    log("ERROR: Shizuku permission denied.")
                 }
                 refreshStatus()
             }
@@ -40,13 +40,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private val binderReceivedListener = Shizuku.OnBinderReceivedListener {
-        runOnUiThread { refreshStatus() }
+        runOnUiThread { 
+            log("Shizuku binder connected.")
+            refreshStatus()
+            checkAndRequestStartupPermission()
+        }
     }
 
     private val binderDeadListener = Shizuku.OnBinderDeadListener {
         runOnUiThread {
             service = null
-            log("Shizuku binder died.")
+            log("WARNING: Shizuku binder died.")
             refreshStatus()
         }
     }
@@ -54,12 +58,12 @@ class MainActivity : AppCompatActivity() {
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName, binder: IBinder) {
             service = IFileInjectorService.Stub.asInterface(binder)
-            log("SUCCESS: Privileged service connected!")
+            log("SUCCESS: Privileged kernel service connected!")
         }
 
         override fun onServiceDisconnected(name: ComponentName) {
             service = null
-            log("WARNING: Privileged service disconnected.")
+            log("WARNING: Privileged kernel service disconnected.")
         }
     }
 
@@ -98,11 +102,15 @@ class MainActivity : AppCompatActivity() {
         Shizuku.addBinderDeadListener(binderDeadListener)
 
         refreshStatus()
+        checkAndRequestStartupPermission()
     }
 
     override fun onResume() {
         super.onResume()
         refreshStatus()
+        if (Shizuku.pingBinder() && Shizuku.checkSelfPermission() == android.content.pm.PackageManager.PERMISSION_GRANTED && service == null) {
+            bindService()
+        }
     }
 
     override fun onDestroy() {
@@ -127,13 +135,32 @@ class MainActivity : AppCompatActivity() {
             else -> "Shizuku: running, permission NOT granted"
         }
         statusText.text = text
+    }
 
-        if (Shizuku.pingBinder() &&
-            Shizuku.checkSelfPermission() == android.content.pm.PackageManager.PERMISSION_GRANTED &&
-            service == null
-        ) {
-            bindService()
+    private fun checkAndRequestStartupPermission() {
+        if (Shizuku.pingBinder()) {
+            if (Shizuku.checkSelfPermission() == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                bindService()
+            } else {
+                log("Prompting for Shizuku permission on startup...")
+                Shizuku.requestPermission(requestCode)
+            }
+        } else {
+            log("Shizuku service is not running. Please start Shizuku app first.")
         }
+    }
+
+    private fun requestShizukuPermission() {
+        if (!Shizuku.pingBinder()) {
+            log("ERROR: Shizuku service isn't running.")
+            return
+        }
+        if (Shizuku.checkSelfPermission() == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            log("Permission already granted.")
+            bindService()
+            return
+        }
+        Shizuku.requestPermission(requestCode)
     }
 
     private fun verifyKeyOnline() {
@@ -152,26 +179,23 @@ class MainActivity : AppCompatActivity() {
                 connection.requestMethod = "GET"
                 connection.connectTimeout = 7000
                 connection.readTimeout = 7000
-                // GitHub raw URLs require a User-Agent header or they can return forbidden/redirect errors
                 connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Android)")
                 connection.instanceFollowRedirects = true
 
                 val responseCode = connection.responseCode
                 if (responseCode == HttpURLConnection.HTTP_OK) {
                     val rawServerText = connection.inputStream.bufferedReader().use { it.readText() }
-                    
-                    // Clean up newlines, carriage returns, and trailing spaces from both server and input
                     val currentServerKey = rawServerText.replace("\r", "").replace("\n", "").trim()
                     val cleanedInputKey = inputKey.replace("\r", "").replace("\n", "").trim()
 
                     runOnUiThread {
-                        log("Server Key: '$currentServerKey'")
+                        log("Server Key Verified.")
                         if (cleanedInputKey == currentServerKey && cleanedInputKey.isNotEmpty()) {
                             log("SUCCESS: Key authorized! App unlocked.")
                             btnInject.isEnabled = true
                             btnOfflineMode.isEnabled = true
                         } else {
-                            log("ERROR: Mismatch! Check server key vs input.")
+                            log("ERROR: Key mismatch! Access denied.")
                             btnInject.isEnabled = false
                             btnOfflineMode.isEnabled = false
                         }
@@ -183,18 +207,6 @@ class MainActivity : AppCompatActivity() {
                 runOnUiThread { log("FAILED: ${e.message}") }
             }
         }.start()
-    }
-
-    private fun requestShizukuPermission() {
-        if (!Shizuku.pingBinder()) {
-            log("Shizuku service isn't running.")
-            return
-        }
-        if (Shizuku.checkSelfPermission() == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-            bindService()
-            return
-        }
-        Shizuku.requestPermission(requestCode)
     }
 
     private fun userServiceArgs() = Shizuku.UserServiceArgs(
