@@ -5,18 +5,26 @@ import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
 import android.widget.Button
+import android.widget.EditText
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import rikka.shizuku.Shizuku
+import java.net.HttpURLConnection
+import java.net.URL
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var statusText: TextView
     private lateinit var logText: TextView
+    private lateinit var keyInput: EditText
+    private lateinit var btnInject: Button
+    private lateinit var btnOfflineMode: Button
 
     private var service: IFileInjectorService? = null
-
     private val requestCode = 1000
+
+    // Your live online raw text file URL containing the valid key
+    private val remoteKeyUrl = "https://raw.githubusercontent.com/mranshurx/ShizukuFileInjector/refs/heads/main/key.txt"
 
     private val permissionListener = Shizuku.OnRequestPermissionResultListener { code, grantResult ->
         if (code == requestCode) {
@@ -62,11 +70,18 @@ class MainActivity : AppCompatActivity() {
 
         statusText = findViewById(R.id.statusText)
         logText = findViewById(R.id.logText)
+        keyInput = findViewById(R.id.keyInput)
+        btnInject = findViewById(R.id.btnInject)
+        btnOfflineMode = findViewById(R.id.btnOfflineMode)
 
         findViewById<Button>(R.id.btnRequestPermission).setOnClickListener {
             requestShizukuPermission()
         }
         
+        findViewById<Button>(R.id.btnVerifyKey).setOnClickListener {
+            verifyKeyOnline()
+        }
+
         findViewById<Button>(R.id.btnInject).setOnClickListener {
             doInjectAssets()
         }
@@ -115,6 +130,46 @@ class MainActivity : AppCompatActivity() {
         ) {
             bindService()
         }
+    }
+
+    private fun verifyKeyOnline() {
+        val inputKey = keyInput.text.toString().trim()
+        if (inputKey.isEmpty()) {
+            log("Please enter a key first.")
+            return
+        }
+
+        log("Checking key with online server...")
+
+        Thread {
+            try {
+                val url = URL(remoteKeyUrl)
+                val connection = url.openConnection() as HttpURLConnection
+                connection.requestMethod = "GET"
+                connection.connectTimeout = 5000
+                connection.readTimeout = 5000
+
+                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                    val currentServerKey = connection.inputStream.bufferedReader().use { it.readText() }.trim()
+
+                    runOnUiThread {
+                        if (inputKey == currentServerKey && inputKey.isNotEmpty()) {
+                            log("SUCCESS: Key authorized by server! App unlocked.")
+                            btnInject.isEnabled = true
+                            btnOfflineMode.isEnabled = true
+                        } else {
+                            log("ERROR: Invalid or expired key! Access denied.")
+                            btnInject.isEnabled = false
+                            btnOfflineMode.isEnabled = false
+                        }
+                    }
+                } else {
+                    runOnUiThread { log("ERROR: Server unreachable (Code: ${connection.responseCode})") }
+                }
+            } catch (e: Exception) {
+                runOnUiThread { log("FAILED: Connection error - ${e.message}") }
+            }
+        }.start()
     }
 
     private fun requestShizukuPermission() {
