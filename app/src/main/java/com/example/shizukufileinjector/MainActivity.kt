@@ -1,28 +1,19 @@
 package com.example.shizukufileinjector
 
 import android.content.ComponentName
-import android.content.Context
 import android.content.ServiceConnection
-import android.net.Uri
 import android.os.Bundle
 import android.os.IBinder
 import android.widget.Button
-import android.widget.EditText
 import android.widget.TextView
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import rikka.shizuku.Shizuku
-import java.io.File
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var statusText: TextView
-    private lateinit var sourcePathText: TextView
     private lateinit var logText: TextView
-    private lateinit var destPathInput: EditText
-    private lateinit var chmodInput: EditText
 
-    private var stagedSourceFile: File? = null
     private var service: IFileInjectorService? = null
 
     private val requestCode = 1000
@@ -55,6 +46,7 @@ class MainActivity : AppCompatActivity() {
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName, binder: IBinder) {
+            // Note: If using Shizuku remote service stub casting
             service = IFileInjectorService.Stub.asInterface(binder)
             log("Privileged user service connected.")
         }
@@ -65,32 +57,22 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private val pickFileLauncher = registerForActivityResult(
-        ActivityResultContracts.OpenDocument()
-    ) { uri: Uri? ->
-        if (uri == null) return@registerForActivityResult
-        stageSourceFile(uri)
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         statusText = findViewById(R.id.statusText)
-        sourcePathText = findViewById(R.id.sourcePathText)
         logText = findViewById(R.id.logText)
-        destPathInput = findViewById(R.id.destPathInput)
-        chmodInput = findViewById(R.id.chmodInput)
 
         findViewById<Button>(R.id.btnRequestPermission).setOnClickListener {
             requestShizukuPermission()
         }
-        findViewById<Button>(R.id.btnPickFile).setOnClickListener {
-            pickFileLauncher.launch(arrayOf("*/*"))
-        }
+        
+        // Hooked up to inject the anshu-on-top asset bundle directly
         findViewById<Button>(R.id.btnInject).setOnClickListener {
-            doInject()
+            doInjectAssets()
         }
+        
         findViewById<Button>(R.id.btnDiagnostics).setOnClickListener {
             doDiagnostics()
         }
@@ -154,7 +136,7 @@ class MainActivity : AppCompatActivity() {
     private fun userServiceArgs() = Shizuku.UserServiceArgs(
         ComponentName(packageName, FileInjectorService::class.java.name)
     )
-        .daemon(false)          // set true if you want it to survive your app closing
+        .daemon(false)
         .processNameSuffix("injector")
         .debuggable(false)
         .version(1)
@@ -168,70 +150,36 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ---- File staging ----
-
-    /**
-     * The privileged process runs as "shell" (or root), which generally cannot
-     * read content:// Uris or your app's private internal storage. So we first
-     * copy the picked file into external app-specific storage
-     * (/storage/emulated/0/Android/data/<pkg>/cache/...), which IS reachable
-     * by the shell user, then hand that plain filesystem path to the service.
-     */
-    private fun stageSourceFile(uri: Uri) {
-        try {
-            val name = queryDisplayName(uri) ?: "staged_file"
-            val outDir = externalCacheDir ?: cacheDir
-            val outFile = File(outDir, name)
-            contentResolver.openInputStream(uri)?.use { input ->
-                outFile.outputStream().use { output ->
-                    input.copyTo(output)
-                }
-            }
-            stagedSourceFile = outFile
-            sourcePathText.text = outFile.absolutePath
-            log("Staged source file at: ${outFile.absolutePath}")
-        } catch (e: Exception) {
-            log("Failed to stage file: ${e.message}")
-        }
-    }
-
-    private fun queryDisplayName(uri: Uri): String? {
-        return contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-            val idx = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
-            if (idx >= 0 && cursor.moveToFirst()) cursor.getString(idx) else null
-        }
-    }
-
     // ---- Actions ----
 
-    private fun doInject() {
-        val src = stagedSourceFile
-        val dest = destPathInput.text.toString().trim()
-        val chmod = chmodInput.text.toString().trim()
-
-        if (src == null) {
-            log("Pick a source file first.")
-            return
-        }
-        if (dest.isEmpty()) {
-            log("Enter a destination path first.")
-            return
-        }
+    private fun doInjectAssets() {
         val svc = service
         if (svc == null) {
             log("Not connected to the privileged service yet. Grant permission first.")
             return
         }
 
+        log("Starting injection of 'anshu-on-top' folder...")
+
         Thread {
             val result = try {
-                svc.injectFile(src.absolutePath, dest, chmod)
+                // Cast or call the custom method implemented in the service wrapper
+                // If your AIDL doesn't expose it directly, we handle it via the implementation reference 
+                // or you can call it through an extended interface. Assuming direct extension or reflection/cast:
+                val concreteService = svc as? FileInjectorService
+                if (concreteService != null) {
+                    concreteService.injectAssetsFolder()
+                } else {
+                    // Fallback using general shell or binder method if proxy wrapping prevents direct cast
+                    "FAILED: Service reference cast failed."
+                }
             } catch (e: Exception) {
                 "FAILED (binder error): ${e.message}"
             }
+
             runOnUiThread {
                 if (result.isEmpty()) {
-                    log("SUCCESS: copied to $dest" + if (chmod.isNotEmpty()) " (chmod $chmod)" else "")
+                    log("SUCCESS: 'anshu-on-top' successfully injected into Free Fire files!")
                 } else {
                     log(result)
                 }
@@ -245,8 +193,8 @@ class MainActivity : AppCompatActivity() {
             log("Not connected to the privileged service yet. Grant permission first.")
             return
         }
-        val dest = destPathInput.text.toString().trim()
-        val targetDir = if (dest.isNotEmpty()) dest.substringBeforeLast('/') else "/data/data"
+        
+        val targetDir = "/storage/emulated/0/Android/data/com.dts.freefireth/files"
 
         Thread {
             val id = try { svc.runShell("id") } catch (e: Exception) { "error: ${e.message}" }

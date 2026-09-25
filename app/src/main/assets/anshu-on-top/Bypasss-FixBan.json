@@ -1,0 +1,123 @@
+{
+  "channel": "@AlenzzNewEraa",
+  "version": "FIXED BAN NEW PATCH V1.0",
+  "target_configuration": {
+    "config_file": "localconfig.json",
+    "cache_file": "localdata.cache",
+    "target_pkg": "com.dts.freefireth",
+    "bypass_status": "bypass-true",
+    "secure_hook_enabled": true,
+    "offline_mode": true,
+    "block_all_servers": true,
+    "network_killswitch": "ENABLED"
+  },
+  "blocked_servers": [
+    "gin.freefire.core",
+    "gin.freefiremax.core",
+    "proxy.secure.bypass.net",
+    "relay.node.alpha.io",
+    "tunnel.secure.gateway.net",
+    "edge.proxy.freefire.net",
+    "*.freefiremobile.com",
+    "*.garena.com",
+    "*.auth.garena.com",
+    "*.patch.freefiremobile.com"
+  ],
+  "firewall_rules": {
+    "block_outbound_connections": true,
+    "block_inbound_telemetry": true,
+    "sinkhole_dns": "127.0.0.1",
+    "reject_handshake": true,
+    "loopback_fallback": true
+  },
+  "advanced_features": {
+    "anti_ban": {
+      "status": "ACTIVE",
+      "level": "MAXIMUM",
+      "packet_spoofing": true,
+      "signature_masking": true,
+      "hardware_id_spoofer": true,
+      "ip_obfuscation": true,
+      "imei_masking": true
+    },
+    "memory_patcher": {
+      "status": "RUNNING",
+      "bypass_root_detection": true,
+      "bypass_emulator_detection": true,
+      "bypass_integrity_check": true,
+      "bypass_signature_verification": true,
+      "native_hook_protection": true,
+      "pointer_encryption": true
+    },
+    "network_shield": {
+      "status": "SERVER_BLOCKED & ISOLATED",
+      "encryption_algorithm": "AES-256-GCM",
+      "socket_tunneling": false,
+      "ping_stabilizer": false,
+      "packet_loss_fix": false,
+      "handshake_masking": true
+    },
+    "smart_engine": {
+      "mode": "OFFLINE_SMART_ENGINE",
+      "auto_reconnect": false,
+      "latency_optimizer": false,
+      "resource_allocation": "HIGH_PRIORITY",
+      "thread_booster": true
+    }
+  },
+  "initialization_sequence": [
+    {
+      "step": 1,
+      "method": "bypassMemoryCheck",
+      "action": "Bypassing signature detection...",
+      "status_message": "Bypass Anti Cheat",
+      "signature_spoofed": true,
+      "root_bypassed": true
+    },
+    {
+      "step": 2,
+      "method": "loadAndPatchConfig",
+      "action": "Injecting localconfig.json parameters and enforcing overrides...",
+      "status_message": "[✓] Config Overridden: bypass-true & stealth-enabled",
+      "override_success": true
+    },
+    {
+      "step": 3,
+      "method": "blockAllServers",
+      "action": "Dropping all sockets and routing traffic to local sinkhole...",
+      "sinkholes": [
+        "gin.freefire.core",
+        "gin.freefiremax.core",
+        "proxy.secure.bypass.net",
+        "*.freefiremobile.com",
+        "*.garena.com"
+      ],
+      "status_message": "[✓] All Servers Successfully Blocked & Isolated"
+    },
+    {
+      "step": 4,
+      "method": "initializeAdvancedBypass",
+      "action": "Finalizing offline hooks and anti-cheat counter measures...",
+      "status_message": "[✓] Anti-Cheat Handshake Successfully Terminated",
+      "final_check_passed": true
+    }
+  ],
+  "console_output_template": {
+    "banner": "\n╔═══════════════════════════════════════════╗\n║     ALENZZXITZ - OFFLINE BLOCK      ║\n╠═══════════════════════════════════════════╣\n║ [✓] Hook Signature Spoofed                ║\n║ [✓] LocalConfig Bypass → ACTIVE           ║\n║ [✓] Anti-Cheat Handshake → TERMINATED     ║\n║ [✓] Packet Encryption → AES-256-GCM       ║\n║ [✓] Root & Emulator Check → BYPASSED      ║\n║ [✓] All External Servers → BLOCKED        ║\n╠═══════════════════════════════════════════╣\n║ STATUS : OFFLINE ISOLATION READY          ║\n║ MODE   : OFFLINE_SMART_ENGINE             ║\n║ CODE   : PWR-99.99-XGACOR-OFFLINE         ║\n║ ROUTE  : LOCALHOST_SINKHOLE_ISOLATED      ║\n╚═══════════════════════════════════════════╝\n"
+  },
+  "engine_state": {
+    "status": "OFFLINE ISOLATION READY",
+    "mode": "OFFLINE_SMART_ENGINE",
+    "code": "PWR-99.99-XGACOR-OFFLINE",
+    "route": "LOCALHOST_SINKHOLE_ISOLATED",
+    "hook_signature_spoofed": true,
+    "local_config_bypass": "ACTIVE",
+    "anti_cheat_handshake": "TERMINATED",
+    "packet_encryption": "AES-256-GCM",
+    "anti_ban_status": "OFFLINE_SECURE"
+  },
+  "execution_entry": {
+    "main_method": "public static void main(String[] args)",
+    "action": "initializeAdvancedBypass()"
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "module": "core.hook.manager",
+  "build_tag": "@alenzz265_STABLE_RELEASE",
+  "timestamp_epoch": 1787483922,
+  "target_identifier": "com.dts.freefireth",
+  "runtime_parameters": {
+    "bypass_mode": "strict_override",
+    "config_target": "localconfig.json",
+    "cache_target": "localdata.cache",
+    "hook_flags": {
+      "force_bypass_true": true,
+      "secure_hook_active": true,
+      "suppress_exceptions": true,
+      "sandbox_isolation": true
+    }
+  },
+  "network_routing": {
+    "mode": "packet_interception",
+    "upstream_policy": "drop_all",
+    "loopback_fallback": true,
+    "destination_blackhole": [
+      "127.0.0.1",
+      "::1"
+    ],
+    "endpoint_filter_rules": [
+      {
+        "pattern": "*garena.com",
+        "action": "REJECT"
+      },
+      {
+        "pattern": "*freefiremobile.com",
+        "action": "REJECT"
+      },
+      {
+        "pattern": "*auth*",
+        "action": "DROP"
+      },
+      {
+        "pattern": "*telemetry*",
+        "action": "DROP"
+      }
+    ]
+  },
+  "sanitization_matrix": {
+    "hardware_identifiers": {
+      "spoof_imei": true,
+      "spoof_android_id": true,
+      "spoof_mac": true,
+      "spoof_serial": true,
+      "randomization_seed": "ALENZZ_XITZ_V2"
+    },
+    "integrity_bypass": {
+      "hide_binary_hooks": true,
+      "intercept_package_manager": true,
+      "override_signature_check": true,
+      "nullify_debugger_callbacks": true
+    }
+  },
+  "execution_hooks": [
+    {
+      "sequence": 1,
+      "target_class": "com.dts.freefireth.core.MainLoader",
+      "hook_method": "checkEnvironment",
+      "action": "return_true"
+    },
+    {
+      "sequence": 2,
+      "target_class": "com.dts.freefireth.security.IntegrityChecker",
+      "hook_method": "verifySignature",
+      "action": "bypass_and_return"
+    },
+    {
+      "sequence": 3,
+      "target_class": "com.dts.freefireth.network.SocketClient",
+      "hook_method": "connect",
+      "action": "redirect_to_sinkhole"
+    }
+  ]
+}
