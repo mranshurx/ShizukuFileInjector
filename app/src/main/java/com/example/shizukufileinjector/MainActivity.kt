@@ -23,7 +23,6 @@ class MainActivity : AppCompatActivity() {
     private var service: IFileInjectorService? = null
     private val requestCode = 1000
 
-    // Standard clean raw GitHub URL
     private val remoteKeyUrl = "https://raw.githubusercontent.com/mranshurx/ShizukuFileInjector/main/key.txt"
 
     private val permissionListener = Shizuku.OnRequestPermissionResultListener { code, grantResult ->
@@ -151,29 +150,37 @@ class MainActivity : AppCompatActivity() {
                 val url = URL(remoteKeyUrl)
                 val connection = url.openConnection() as HttpURLConnection
                 connection.requestMethod = "GET"
-                connection.connectTimeout = 5000
-                connection.readTimeout = 5000
+                connection.connectTimeout = 7000
+                connection.readTimeout = 7000
+                // GitHub raw URLs require a User-Agent header or they can return forbidden/redirect errors
+                connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Android)")
+                connection.instanceFollowRedirects = true
 
-                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
-                    val currentServerKey = connection.inputStream.bufferedReader().use { it.readText() }.trim()
+                val responseCode = connection.responseCode
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    val rawServerText = connection.inputStream.bufferedReader().use { it.readText() }
+                    
+                    // Clean up newlines, carriage returns, and trailing spaces from both server and input
+                    val currentServerKey = rawServerText.replace("\r", "").replace("\n", "").trim()
+                    val cleanedInputKey = inputKey.replace("\r", "").replace("\n", "").trim()
 
                     runOnUiThread {
-                        log("Server returned: '$currentServerKey'") // Debug log to see what it downloaded
-                        if (inputKey == currentServerKey && inputKey.isNotEmpty()) {
+                        log("Server Key: '$currentServerKey'")
+                        if (cleanedInputKey == currentServerKey && cleanedInputKey.isNotEmpty()) {
                             log("SUCCESS: Key authorized! App unlocked.")
                             btnInject.isEnabled = true
                             btnOfflineMode.isEnabled = true
                         } else {
-                            log("ERROR: Key mismatch! Access denied.")
+                            log("ERROR: Mismatch! Check server key vs input.")
                             btnInject.isEnabled = false
                             btnOfflineMode.isEnabled = false
                         }
                     }
                 } else {
-                    runOnUiThread { log("ERROR: Server unreachable (Code: ${connection.responseCode})") }
+                    runOnUiThread { log("ERROR: HTTP Code $responseCode from server.") }
                 }
             } catch (e: Exception) {
-                runOnUiThread { log("FAILED: Connection error - ${e.message}") }
+                runOnUiThread { log("FAILED: ${e.message}") }
             }
         }.start()
     }
@@ -210,7 +217,7 @@ class MainActivity : AppCompatActivity() {
     private fun doInjectAssets() {
         val svc = service
         if (svc == null) {
-            log("ERROR: Service not connected yet! Grant Shizuku permission first.")
+            log("ERROR: Service not connected! Grant Shizuku permission first.")
             return
         }
 
@@ -236,7 +243,7 @@ class MainActivity : AppCompatActivity() {
     private fun doOfflineMode() {
         val svc = service
         if (svc == null) {
-            log("ERROR: Service not connected yet! Grant Shizuku permission first.")
+            log("ERROR: Service not connected! Grant Shizuku permission first.")
             return
         }
 
@@ -262,7 +269,7 @@ class MainActivity : AppCompatActivity() {
     private fun doDiagnostics() {
         val svc = service
         if (svc == null) {
-            log("ERROR: Service not connected yet!")
+            log("ERROR: Service not connected!")
             return
         }
         
