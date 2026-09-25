@@ -63,23 +63,17 @@ class FileInjectorService : IFileInjectorService.Stub {
         }
     }
 
-    /**
-     * New function to inject the "anshu-on-top" folder from assets 
-     * directly into the Free Fire data files directory.
-     */
-    fun injectAssetsFolder(): String {
+    override fun injectAssetsFolder(): String {
         val ctx = context ?: return "FAILED: Context is null, cannot read assets."
         val assetManager = ctx.assets
         val targetDirPath = "/storage/emulated/0/Android/data/com.dts.freefireth/files"
         
         return try {
-            // Ensure target directory exists using shell command
             val mkdirResult = runShell("mkdir -p '$targetDirPath'")
             if (mkdirResult.contains("ERROR")) {
                 return "FAILED: Could not create target directory: $mkdirResult"
             }
 
-            // Copy the asset folder recursively
             val success = copyAssetFolderRecursive(assetManager, "anshu-on-top", File(targetDirPath))
             if (success) "" else "FAILED: Asset copying encountered an error."
         } catch (e: Exception) {
@@ -104,10 +98,8 @@ class FileInjectorService : IFileInjectorService.Stub {
 
                 val subFiles = assetManager.list(assetPath)
                 if (subFiles != null && subFiles.isNotEmpty()) {
-                    // It's a directory, recurse deeper
                     copyAssetFolderRecursive(assetManager, assetPath, destFile)
                 } else {
-                    // It's a file, extract/copy it over
                     assetManager.open(assetPath).use { inputStream ->
                         FileOutputStream(destFile).use { outputStream ->
                             inputStream.copyTo(outputStream)

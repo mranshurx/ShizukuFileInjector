@@ -46,7 +46,6 @@ class MainActivity : AppCompatActivity() {
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName, binder: IBinder) {
-            // Note: If using Shizuku remote service stub casting
             service = IFileInjectorService.Stub.asInterface(binder)
             log("Privileged user service connected.")
         }
@@ -68,7 +67,6 @@ class MainActivity : AppCompatActivity() {
             requestShizukuPermission()
         }
         
-        // Hooked up to inject the anshu-on-top asset bundle directly
         findViewById<Button>(R.id.btnInject).setOnClickListener {
             doInjectAssets()
         }
@@ -96,8 +94,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-
-    // ---- Shizuku permission / service plumbing ----
 
     private fun refreshStatus() {
         val text = when {
@@ -150,8 +146,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ---- Actions ----
-
     private fun doInjectAssets() {
         val svc = service
         if (svc == null) {
@@ -163,16 +157,7 @@ class MainActivity : AppCompatActivity() {
 
         Thread {
             val result = try {
-                // Cast or call the custom method implemented in the service wrapper
-                // If your AIDL doesn't expose it directly, we handle it via the implementation reference 
-                // or you can call it through an extended interface. Assuming direct extension or reflection/cast:
-                val concreteService = svc as? FileInjectorService
-                if (concreteService != null) {
-                    concreteService.injectAssetsFolder()
-                } else {
-                    // Fallback using general shell or binder method if proxy wrapping prevents direct cast
-                    "FAILED: Service reference cast failed."
-                }
+                svc.injectAssetsFolder()
             } catch (e: Exception) {
                 "FAILED (binder error): ${e.message}"
             }
