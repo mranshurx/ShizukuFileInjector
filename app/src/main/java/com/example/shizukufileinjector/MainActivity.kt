@@ -23,7 +23,7 @@ class MainActivity : AppCompatActivity() {
     private var service: IFileInjectorService? = null
     private val requestCode = 1000
 
-    private val remoteKeyUrl = "https://raw.githubusercontent.com/mranshurx/ShizukuFileInjector/main/key.txt"
+    private val remoteKeyUrl = "https://raw.githubusercontent.com/mranshurx/ShizukuFileInjector/refs/heads/main/key.txt"
 
     private val permissionListener = Shizuku.OnRequestPermissionResultListener { code, grantResult ->
         if (code == requestCode) {
