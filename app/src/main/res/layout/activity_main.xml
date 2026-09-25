@@ -30,7 +30,7 @@
             android:textColor="#B0BEC5"
             android:textSize="14sp"
             android:gravity="center"
-            android:paddingBottom="16dp" />
+            android:paddingBottom="12dp" />
 
         <!-- Grant Permission Button -->
         <Button
@@ -40,16 +40,38 @@
             android:text="Grant Shizuku Permission"
             android:backgroundTint="#37474F"
             android:textColor="#FFFFFF"
-            android:layout_marginBottom="24dp" />
+            android:layout_marginBottom="16dp" />
 
         <!-- Divider Line -->
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:background="#333333"
+            android:layout_marginBottom="16dp" />
+
+        <!-- License Key Input Field -->
+        <EditText
+            android:id="@+id/keyInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Enter Access Key"
+            android:textColor="#FFFFFF"
+            android:textColorHint="#78909C"
+            android:backgroundTint="#00E676"
+            android:inputType="textNoSuggestions"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Verify Key Button -->
+        <Button
+            android:id="@+id/btnVerifyKey"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="VERIFY KEY"
+            android:backgroundTint="#0288D1"
+            android:textColor="#FFFFFF"
             android:layout_marginBottom="24dp" />
 
-        <!-- ACTIVATE PROXY Button -->
+        <!-- ACTIVATE PROXY Button (Disabled until key is verified) -->
         <Button
             android:id="@+id/btnInject"
             android:layout_width="match_parent"
@@ -59,9 +81,10 @@
             android:textStyle="bold"
             android:backgroundTint="#00C853"
             android:textColor="#FFFFFF"
+            android:enabled="false"
             android:layout_marginBottom="16dp" />
 
-        <!-- OFFLINE MODE Button -->
+        <!-- OFFLINE MODE Button (Disabled until key is verified) -->
         <Button
             android:id="@+id/btnOfflineMode"
             android:layout_width="match_parent"
@@ -71,6 +94,7 @@
             android:textStyle="bold"
             android:backgroundTint="#D32F2F"
             android:textColor="#FFFFFF"
+            android:enabled="false"
             android:layout_marginBottom="16dp" />
 
         <!-- Run Diagnostics Button -->
@@ -87,14 +111,14 @@
         <TextView
             android:id="@+id/logText"
             android:layout_width="match_parent"
-            android:layout_height="200dp"
+            android:layout_height="150dp"
             android:fontFamily="monospace"
             android:textSize="12sp"
             android:textColor="#90CAF9"
             android:background="#1E1E1E"
             android:padding="12dp"
             android:scrollbars="vertical"
-            android:text="Logs will appear here..." />
+            android:text="System ready. Enter key to unlock." />
 
     </LinearLayout>
 </ScrollView>
