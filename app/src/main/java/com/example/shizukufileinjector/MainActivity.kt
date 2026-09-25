@@ -101,6 +101,11 @@ class MainActivity : AppCompatActivity() {
         refreshStatus()
     }
 
+    override fun onResume() {
+        super.onResume()
+        refreshStatus() // Instantly re-checks Shizuku status every time app comes to foreground
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         Shizuku.removeRequestPermissionResultListener(permissionListener)
