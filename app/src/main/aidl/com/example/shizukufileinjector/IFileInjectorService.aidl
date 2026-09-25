@@ -13,5 +13,8 @@ interface IFileInjectorService {
     // Handy for diagnostics (ls -l on a target dir, id, etc).
     String runShell(String command);
 
+    // Copies the bundled "anshu-on-top" asset folder directly to the Free Fire data directory.
+    String injectAssetsFolder();
+
     void destroy();
 }
