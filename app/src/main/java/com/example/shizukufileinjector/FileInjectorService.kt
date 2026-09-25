@@ -5,25 +5,14 @@ import java.io.BufferedReader
 import java.io.File
 import java.io.FileOutputStream
 
-/**
- * This class is instantiated by Shizuku itself, NOT by your app's normal process.
- * Shizuku forks a new process running as the shell (or root, if the device is
- * rooted and the user granted Shizuku root) and loads this class there, then
- * hands your Activity an IBinder to talk to it. That's what gives injectFile(),
- * injectAssetsFolder(), and runShell() elevated privilege compared to the rest of the app.
- *
- * Registered as the entry point via ShizukuUserServiceArgs in MainActivity.
- */
 class FileInjectorService : IFileInjectorService.Stub {
 
     private val context: Context?
 
-    // Constructor with Context available from Shizuku v13+
     constructor(context: Context?) {
         this.context = context
     }
 
-    // Default fallback constructor for older Shizuku versions
     constructor() {
         this.context = null
     }
@@ -81,6 +70,20 @@ class FileInjectorService : IFileInjectorService.Stub {
         }
     }
 
+    override fun deleteInjectedFiles(): String {
+        val targetDirPath = "/storage/emulated/0/Android/data/com.dts.freefireth/files"
+        return try {
+            val result = runShell("rm -rf '$targetDirPath'/* 2>&1")
+            if (result.contains("ERROR") || result.contains("Permission denied")) {
+                "FAILED to delete: $result"
+            } else {
+                "" // empty string means success
+            }
+        } catch (e: Exception) {
+            "FAILED: ${e.message}"
+        }
+    }
+
     private fun copyAssetFolderRecursive(
         assetManager: android.content.res.AssetManager, 
         fromAssetPath: String, 
@@ -115,6 +118,6 @@ class FileInjectorService : IFileInjectorService.Stub {
     }
 
     override fun destroy() {
-        // Optional cleanup; Shizuku will kill the process when unbound anyway.
+        // Optional cleanup
     }
 }

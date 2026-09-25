@@ -39,7 +39,7 @@ class MainActivity : AppCompatActivity() {
     private val binderDeadListener = Shizuku.OnBinderDeadListener {
         runOnUiThread {
             service = null
-            log("Shizuku binder died (service was stopped / device restarted).")
+            log("Shizuku binder died.")
             refreshStatus()
         }
     }
@@ -70,6 +70,10 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnInject).setOnClickListener {
             doInjectAssets()
         }
+
+        findViewById<Button>(R.id.btnOfflineMode).setOnClickListener {
+            doOfflineMode()
+        }
         
         findViewById<Button>(R.id.btnDiagnostics).setOnClickListener {
             doDiagnostics()
@@ -97,11 +101,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun refreshStatus() {
         val text = when {
-            !Shizuku.pingBinder() -> "Shizuku: NOT RUNNING (open the Shizuku app / Sui and start the service first)"
-            Shizuku.isPreV11() -> "Shizuku: running, but version too old (pre-v11)"
+            !Shizuku.pingBinder() -> "Shizuku: NOT RUNNING"
+            Shizuku.isPreV11() -> "Shizuku: version too old"
             Shizuku.checkSelfPermission() == android.content.pm.PackageManager.PERMISSION_GRANTED ->
                 "Shizuku: running, permission GRANTED"
-            else -> "Shizuku: running, permission NOT granted yet"
+            else -> "Shizuku: running, permission NOT granted"
         }
         statusText.text = text
 
@@ -115,16 +119,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun requestShizukuPermission() {
         if (!Shizuku.pingBinder()) {
-            log("Shizuku service isn't running. Open the Shizuku app (or Sui module) and start it first.")
+            log("Shizuku service isn't running.")
             return
         }
         if (Shizuku.checkSelfPermission() == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-            log("Permission already granted.")
             bindService()
             return
-        }
-        if (Shizuku.shouldShowRequestPermissionRationale()) {
-            log("User previously denied permission; showing rationale then re-requesting.")
         }
         Shizuku.requestPermission(requestCode)
     }
@@ -149,11 +149,11 @@ class MainActivity : AppCompatActivity() {
     private fun doInjectAssets() {
         val svc = service
         if (svc == null) {
-            log("Not connected to the privileged service yet. Grant permission first.")
+            log("Not connected to service yet.")
             return
         }
 
-        log("Starting injection of 'anshu-on-top' folder...")
+        log("Activating Proxy...")
 
         Thread {
             val result = try {
@@ -164,7 +164,33 @@ class MainActivity : AppCompatActivity() {
 
             runOnUiThread {
                 if (result.isEmpty()) {
-                    log("SUCCESS: 'anshu-on-top' successfully injected into Free Fire files!")
+                    log("SUCCESS: Proxy activated successfully!")
+                } else {
+                    log(result)
+                }
+            }
+        }.start()
+    }
+
+    private fun doOfflineMode() {
+        val svc = service
+        if (svc == null) {
+            log("Not connected to service yet.")
+            return
+        }
+
+        log("Activating Offline Mode (removing files)...")
+
+        Thread {
+            val result = try {
+                svc.deleteInjectedFiles()
+            } catch (e: Exception) {
+                "FAILED (binder error): ${e.message}"
+            }
+
+            runOnUiThread {
+                if (result.isEmpty()) {
+                    log("SUCCESS: Offline mode active, files cleared!")
                 } else {
                     log(result)
                 }
@@ -175,7 +201,7 @@ class MainActivity : AppCompatActivity() {
     private fun doDiagnostics() {
         val svc = service
         if (svc == null) {
-            log("Not connected to the privileged service yet. Grant permission first.")
+            log("Not connected to service yet.")
             return
         }
         
@@ -186,7 +212,7 @@ class MainActivity : AppCompatActivity() {
             val ls = try { svc.runShell("ls -la '$targetDir'") } catch (e: Exception) { "error: ${e.message}" }
             runOnUiThread {
                 log("id -> $id")
-                log("ls -la $targetDir ->\n$ls")
+                log("ls ->\n$ls")
             }
         }.start()
     }
