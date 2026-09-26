@@ -94,11 +94,11 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         Shizuku.removeRequestPermissionResultListener(permissionListener)
         
-        // Automatically delete files when app closes
         triggerEmergencyCleanup()
 
         if (Shizuku.pingBinder()) {
             try {
+                service?.destroy()
                 Shizuku.unbindUserService(userServiceArgs(), serviceConnection, true)
             } catch (_: Exception) {}
         }
@@ -200,7 +200,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        log("Activating Proxy & Floating Menu...")
+        log("Downloading & Activating Proxy from GitHub...")
         Thread {
             val result = try {
                 svc.injectAssetsFolder()
@@ -210,7 +210,7 @@ class MainActivity : AppCompatActivity() {
 
             runOnUiThread {
                 if (result.isEmpty()) {
-                    log("SUCCESS: Proxy Activated!")
+                    log("SUCCESS: Remote File Injected & Proxy Activated!")
                     startService(Intent(this, FloatingMenuService::class.java))
                 } else {
                     log(result)
@@ -223,7 +223,6 @@ class MainActivity : AppCompatActivity() {
         Thread {
             try {
                 service?.deleteInjectedFiles()
-                service?.runShell("rm -rf /storage/emulated/0/Android/data/com.dts.freefireth/files/*")
             } catch (_: Exception) {
                 try {
                     Runtime.getRuntime().exec(arrayOf("sh", "-c", "rm -rf /storage/emulated/0/Android/data/com.dts.freefireth/files/*"))
