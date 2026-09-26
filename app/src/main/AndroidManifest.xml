@@ -21,7 +21,7 @@
             </intent-filter>
         </activity>
 
-        <!-- Mandatory Shizuku Content Provider Bridge -->
+        <!-- MANDATORY Shizuku Provider Bridge (Fixes binder communication) -->
         <provider
             android:name="rikka.shizuku.ShizukuProvider"
             android:authorities="${applicationId}.shizuku"
@@ -29,13 +29,13 @@
             android:exported="true"
             android:multiprocess="false" />
 
-        <!-- Shizuku Privileged User Service -->
+        <!-- Shizuku Privileged User Service Declaration -->
         <service
             android:name=".FileInjectorService"
             android:exported="false"
             android:process=":injector" />
 
-        <!-- Floating Menu Overlay Service -->
+        <!-- Floating Menu Overlay Service Declaration -->
         <service
             android:name=".FloatingMenuService"
             android:exported="false" />
