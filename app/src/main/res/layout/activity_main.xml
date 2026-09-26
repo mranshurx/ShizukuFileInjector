@@ -1,158 +1,99 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#090A0F"
-    android:fillViewport="true">
+    android:background="#0A0A0A"
+    android:orientation="vertical"
+    android:padding="16px">
 
+    <!-- Status Bar -->
+    <TextView
+        android:id="@+id/statusText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Shizuku: Checking..."
+        android:textColor="#00FF66"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:paddingBottom="8dp" />
+
+    <!-- 1. Authentication Screen Container (Visible on launch) -->
     <LinearLayout
+        android:id="@+id/authScreen"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="20dp"
-        android:gravity="center_horizontal">
+        android:visibility="visible">
 
-        <!-- Header / Premium Branding Badge -->
         <TextView
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="ANXHU-HUNTER-V1"
-            android:textSize="24sp"
-            android:textStyle="bold"
+            android:text="ANXHU-HUNTER-V1 | AUTHENTICATION"
             android:textColor="#00FF66"
-            android:letterSpacing="0.1"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:paddingBottom="12dp" />
+
+        <EditText
+            android:id="@+id/keyInput"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:background="#1A1A1A"
+            android:hint="Enter Key..."
+            android:textColor="#FFFFFF"
+            android:textColorHint="#555555"
+            android:textSize="14sp"
+            android:inputType="text"
+            android:padding="8dp" />
+
+        <Button
+            android:id="@+id/btnVerifyKey"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
             android:layout_marginTop="12dp"
-            android:layout_marginBottom="4dp" />
+            android:background="#00FF66"
+            android:text="VERIFY KEY"
+            android:textColor="#000000"
+            android:textStyle="bold" />
+    </LinearLayout>
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="SECURE PRIVILEGED KERNEL GATEWAY"
-            android:textSize="10sp"
-            android:textColor="#546E7A"
-            android:letterSpacing="0.2"
-            android:layout_marginBottom="20dp" />
+    <!-- 2. Main Dashboard Container (Hidden until key is verified) -->
+    <LinearLayout
+        android:id="@+id/mainDashboard"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone">
 
-        <!-- Status Card Panel -->
-        <LinearLayout
+        <Button
+            android:id="@+id/btnRequestPermission"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="#121620"
-            android:padding="16dp"
-            android:layout_marginBottom="16dp">
+            android:layout_height="48dp"
+            android:text="Grant Shizuku Permission"
+            android:background="#222222"
+            android:textColor="#00FF66"
+            android:layout_marginBottom="8dp" />
 
-            <TextView
-                android:id="@+id/statusText"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="System: Initializing Gateway..."
-                android:textColor="#B0BEC5"
-                android:textSize="13sp"
-                android:fontFamily="monospace"
-                android:gravity="center"
-                android:layout_marginBottom="12dp" />
-
-            <Button
-                android:id="@+id/btnRequestPermission"
-                android:layout_width="match_parent"
-                android:layout_height="45dp"
-                android:text="INITIALIZE SHIZUKU"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:backgroundTint="#1E293B"
-                android:textColor="#00FF66" />
-        </LinearLayout>
-
-        <!-- Authentication Panel -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="#121620"
-            android:padding="16dp"
-            android:layout_marginBottom="16dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="CLOUD LICENSE AUTHORIZATION"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:textColor="#78909C"
-                android:layout_marginBottom="8dp" />
-
-            <EditText
-                android:id="@+id/keyInput"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:hint="Enter Security Token Key"
-                android:textColor="#FFFFFF"
-                android:textColorHint="#455A64"
-                android:background="#090A0F"
-                android:paddingHorizontal="12dp"
-                android:textSize="14sp"
-                android:inputType="textNoSuggestions"
-                android:layout_marginBottom="10dp" />
-
-            <Button
-                android:id="@+id/btnVerifyKey"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:text="AUTHENTICATE KEY"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                android:backgroundTint="#0288D1"
-                android:textColor="#FFFFFF" />
-        </LinearLayout>
-
-        <!-- Core Execution Action Buttons -->
         <Button
             android:id="@+id/btnInject"
             android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:text="⚡ ACTIVATE PROXY"
-            android:textSize="15sp"
-            android:textStyle="bold"
-            android:backgroundTint="#00C853"
+            android:layout_height="48dp"
+            android:text="ACTIVATE PROXY"
+            android:background="#00FF66"
             android:textColor="#000000"
-            android:enabled="false"
-            android:layout_marginBottom="12dp" />
-
-        <Button
-            android:id="@+id/btnOfflineMode"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:text="🛡️ OFFLINE MODE"
-            android:textSize="15sp"
-            android:textStyle="bold"
-            android:backgroundTint="#D32F2F"
-            android:textColor="#FFFFFF"
-            android:enabled="false"
-            android:layout_marginBottom="12dp" />
-
-        <Button
-            android:id="@+id/btnDiagnostics"
-            android:layout_width="match_parent"
-            android:layout_height="45dp"
-            android:text="Run Diagnostics"
-            android:textSize="12sp"
-            android:backgroundTint="#1A202C"
-            android:textColor="#94A3B8"
-            android:layout_marginBottom="16dp" />
-
-        <!-- Console Log Output Terminal -->
-        <TextView
-            android:id="@+id/logText"
-            android:layout_width="match_parent"
-            android:layout_height="140dp"
-            android:fontFamily="monospace"
-            android:textSize="11sp"
-            android:textColor="#00FF66"
-            android:background="#050608"
-            android:padding="12dp"
-            android:scrollbars="vertical"
-            android:text="[ANXHU_CORE] Ready for secure operations..." />
-
+            android:textStyle="bold" />
     </LinearLayout>
-</ScrollView>
+
+    <!-- Console Logs -->
+    <TextView
+        android:id="@+id/logText"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="16dp"
+        android:background="#050505"
+        android:textColor="#00FF66"
+        android:textSize="11sp"
+        android:text="[System Initialized]\n"
+        android:padding="8dp" />
+
+</LinearLayout>

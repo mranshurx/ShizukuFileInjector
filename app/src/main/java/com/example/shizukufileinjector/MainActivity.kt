@@ -19,12 +19,12 @@ import java.net.URL
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit.init var authScreen: LinearLayout
-    private lateinit.init var mainDashboard: LinearLayout
-    private lateinit.init var statusText: TextView
-    private lateinit.init var logText: TextView
-    private lateinit.init var keyInput: EditText
-    private lateinit.init var btnInject: Button
+    private lateinit var authScreen: LinearLayout
+    private lateinit var mainDashboard: LinearLayout
+    private lateinit var statusText: TextView
+    private lateinit var logText: TextView
+    private lateinit var keyInput: EditText
+    private lateinit var btnInject: Button
 
     private var service: IFileInjectorService? = null
     private val requestCode = 1000
@@ -62,10 +62,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Find views (Assuming you split or organize your layout containers)
-        // If authScreen / mainDashboard layout IDs aren't in your XML, handle them accordingly:
-        authScreen = findViewById(R.id.authScreen) // Make sure this layout group exists in activity_main.xml for Key Auth
-        mainDashboard = findViewById(R.id.mainDashboard) // Main controls
+        authScreen = findViewById(R.id.authScreen)
+        mainDashboard = findViewById(R.id.mainDashboard)
         statusText = findViewById(R.id.statusText)
         logText = findViewById(R.id.logText)
         keyInput = findViewById(R.id.keyInput)
@@ -135,7 +133,6 @@ class MainActivity : AppCompatActivity() {
                             authScreen.visibility = View.GONE
                             mainDashboard.visibility = View.VISIBLE
                             
-                            // Initialize Shizuku check after unlocking
                             if (Shizuku.pingBinder() && Shizuku.checkSelfPermission() == android.content.pm.PackageManager.PERMISSION_GRANTED) {
                                 bindService()
                             } else {
@@ -209,7 +206,6 @@ class MainActivity : AppCompatActivity() {
             runOnUiThread {
                 if (result.isEmpty()) {
                     log("SUCCESS: Proxy Activated!")
-                    // Launch Floating Bubble Service
                     startService(Intent(this, FloatingMenuService::class.java))
                 } else {
                     log(result)
