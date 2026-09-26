@@ -1,123 +1,67 @@
 package com.example.shizukufileinjector
 
-import android.content.Context
-import java.io.BufferedReader
+import android.app.Service
+import android.content.Intent
+import android.os.IBinder
+import rikka.shizuku.Shizuku
 import java.io.File
 import java.io.FileOutputStream
+import java.net.HttpURLConnection
+import java.net.URL
 
-class FileInjectorService : IFileInjectorService.Stub {
+class FileInjectorService : Service() {
 
-    private val context: Context?
+    private val binder = object : IFileInjectorService.Stub() {
+        override fun injectAssetsFolder(): String {
+            return try {
+                val targetDir = File("/storage/emulated/0/Android/data/com.dts.freefireth/files/netcache") // Adjust path if needed
+                if (!targetDir.exists()) {
+                    runShell("mkdir -p ${targetDir.absolutePath}")
+                }
 
-    constructor(context: Context?) {
-        this.context = context
-    }
+                // Example: Replace with your actual raw GitHub link to the hosted file in 'anshu-on-top'
+                val remoteFileUrl = "https://raw.githubusercontent.com/mranshurx/ShizukuFileInjector/main/anshu-on-top/your_file.dat"
+                val destinationFile = File(targetDir, "injected_proxy.dat")
 
-    constructor() {
-        this.context = null
-    }
+                val url = URL(remoteFileUrl)
+                val connection = url.openConnection() as HttpURLConnection
+                connection.requestMethod = "GET"
+                connection.connect()
 
-    override fun runShell(command: String): String {
-        return try {
-            val process = ProcessBuilder("sh", "-c", command)
-                .redirectErrorStream(true)
-                .start()
-            val output = process.inputStream.bufferedReader().use(BufferedReader::readText)
-            process.waitFor()
-            output
-        } catch (e: Exception) {
-            "ERROR: ${e.message}"
-        }
-    }
-
-    override fun injectFile(srcPath: String, destPath: String, chmod: String): String {
-        return try {
-            val destDir = destPath.substringBeforeLast('/')
-            var out = runShell("mkdir -p '$destDir' && cp -f '$srcPath' '$destPath' 2>&1")
-
-            if (out.contains("No such file") || out.contains("Permission denied") ||
-                out.contains("Operation not permitted") || out.contains("ERROR")
-            ) {
-                return "FAILED: $out"
-            }
-
-            if (chmod.isNotBlank()) {
-                out = runShell("chmod $chmod '$destPath' 2>&1")
-                if (out.isNotBlank()) return "COPIED but chmod failed: $out"
-            }
-
-            "" // empty string = success
-        } catch (e: Exception) {
-            "FAILED: ${e.message}"
-        }
-    }
-
-    override fun injectAssetsFolder(): String {
-        val ctx = context ?: return "FAILED: Context is null, cannot read assets."
-        val assetManager = ctx.assets
-        val targetDirPath = "/storage/emulated/0/Android/data/com.dts.freefireth/files"
-        
-        return try {
-            val mkdirResult = runShell("mkdir -p '$targetDirPath'")
-            if (mkdirResult.contains("ERROR")) {
-                return "FAILED: Could not create target directory: $mkdirResult"
-            }
-
-            val success = copyAssetFolderRecursive(assetManager, "anshu-on-top", File(targetDirPath))
-            if (success) "" else "FAILED: Asset copying encountered an error."
-        } catch (e: Exception) {
-            "FAILED: ${e.message}"
-        }
-    }
-
-    override fun deleteInjectedFiles(): String {
-        val targetDirPath = "/storage/emulated/0/Android/data/com.dts.freefireth/files"
-        return try {
-            val result = runShell("rm -rf '$targetDirPath'/* 2>&1")
-            if (result.contains("ERROR") || result.contains("Permission denied")) {
-                "FAILED to delete: $result"
-            } else {
-                "" // empty string means success
-            }
-        } catch (e: Exception) {
-            "FAILED: ${e.message}"
-        }
-    }
-
-    private fun copyAssetFolderRecursive(
-        assetManager: android.content.res.AssetManager, 
-        fromAssetPath: String, 
-        toDestinationDir: File
-    ): Boolean {
-        try {
-            val files = assetManager.list(fromAssetPath) ?: return false
-            if (!toDestinationDir.exists()) {
-                toDestinationDir.mkdirs()
-            }
-
-            for (filename in files) {
-                val assetPath = "$fromAssetPath/$filename"
-                val destFile = File(toDestinationDir, filename)
-
-                val subFiles = assetManager.list(assetPath)
-                if (subFiles != null && subFiles.isNotEmpty()) {
-                    copyAssetFolderRecursive(assetManager, assetPath, destFile)
-                } else {
-                    assetManager.open(assetPath).use { inputStream ->
-                        FileOutputStream(destFile).use { outputStream ->
-                            inputStream.copyTo(outputStream)
+                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                    connection.inputStream.use { input ->
+                        FileOutputStream(destinationFile).use { output ->
+                            input.copyTo(output)
                         }
                     }
+                    // Set permissions using Shizuku shell so the game can read it
+                    runShell("chmod 777 ${destinationFile.absolutePath}")
+                    "" // Empty string means success
+                } else {
+                    "FAILED: Server returned HTTP ${connection.responseCode}"
                 }
+            } catch (e: Exception) {
+                "FAILED: ${e.message}"
             }
-            return true
-        } catch (e: Exception) {
-            e.printStackTrace()
-            return false
+        }
+
+        override fun deleteInjectedFiles() {
+            try {
+                runShell("rm -rf /storage/emulated/0/Android/data/com.dts.freefireth/files/*")
+            } catch (_: Exception) {}
+        }
+
+        override fun runShell(command: String): String {
+            return try {
+                val process = Shizuku.newProcess(arrayOf("sh", "-c", command), null, null)
+                val output = process.inputStream.bufferedReader().use { it.readText() }
+                process.waitFor()
+                output
+            } catch (e: Exception) {
+                "Error: ${e.message}"
+            }
         }
     }
 
-    override fun destroy() {
-        // Optional cleanup
-    }
+    override fun onBind(intent: Intent?): IBinder = binder
 }
