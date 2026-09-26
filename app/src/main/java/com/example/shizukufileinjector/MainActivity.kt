@@ -3,6 +3,7 @@ package com.example.shizukufileinjector
 import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.IBinder
@@ -35,11 +36,11 @@ class MainActivity : AppCompatActivity() {
     private val permissionListener = Shizuku.OnRequestPermissionResultListener { code, grantResult ->
         if (code == requestCode) {
             runOnUiThread {
-                if (grantResult == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                    log("Shizuku permission granted.")
+                if (grantResult == PackageManager.PERMISSION_GRANTED) {
+                    log("Shizuku permission granted!")
                     bindService()
                 } else {
-                    log("Shizuku permission denied.")
+                    log("ERROR: Shizuku permission was denied!")
                 }
                 refreshStatus()
             }
@@ -49,12 +50,12 @@ class MainActivity : AppCompatActivity() {
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName, binder: IBinder) {
             service = IFileInjectorService.Stub.asInterface(binder)
-            log("SUCCESS: Privileged kernel service connected!")
+            log("SUCCESS: Privileged service linked!")
         }
 
         override fun onServiceDisconnected(name: ComponentName) {
             service = null
-            log("WARNING: Privileged kernel service disconnected.")
+            log("WARNING: Privileged service unlinked.")
         }
     }
 
@@ -69,30 +70,30 @@ class MainActivity : AppCompatActivity() {
         keyInput = findViewById(R.id.keyInput)
         btnInject = findViewById(R.id.btnInject)
 
-        findViewById<Button>(R.id.btnVerifyKey).setOnClickListener {
-            verifyKeyOnline()
-        }
+        findViewById<Button>(R.id.btnVerifyKey).setOnClickListener { verifyKeyOnline() }
+        findViewById<Button>(R.id.btnRequestPermission).setOnClickListener { requestShizukuPermission() }
+        findViewById<Button>(R.id.btnInject).setOnClickListener { checkAndRequestOverlayPermission() }
 
-        findViewById<Button>(R.id.btnRequestPermission).setOnClickListener {
-            requestShizukuPermission()
-        }
-
-        findViewById<Button>(R.id.btnInject).setOnClickListener {
-            checkAndRequestOverlayPermission()
-        }
-
-        Shizuku.addRequestPermissionResultListener(permissionListener)
+        try {
+            Shizuku.addRequestPermissionResultListener(permissionListener)
+        } catch (_: Exception) {}
+        
         refreshStatus()
     }
 
     override fun onResume() {
         super.onResume()
         refreshStatus()
+        if (Shizuku.pingBinder() && Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED && service == null) {
+            bindService()
+        }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        Shizuku.removeRequestPermissionResultListener(permissionListener)
+        try {
+            Shizuku.removeRequestPermissionResultListener(permissionListener)
+        } catch (_: Exception) {}
         
         triggerEmergencyCleanup()
 
@@ -105,18 +106,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refreshStatus() {
-        val text = when {
-            !Shizuku.pingBinder() -> "Shizuku: NOT RUNNING"
-            Shizuku.checkSelfPermission() == android.content.pm.PackageManager.PERMISSION_GRANTED -> "Shizuku: GRANTED"
-            else -> "Shizuku: NOT GRANTED"
+        val status = when {
+            !Shizuku.pingBinder() -> "Shizuku: OFFLINE (Open Shizuku App)"
+            Shizuku.checkSelfPermission() != PackageManager.PERMISSION_GRANTED -> "Shizuku: ONLINE (Permission Needed)"
+            else -> "Shizuku: READY & CONNECTED"
         }
-        statusText.text = text
+        statusText.text = status
     }
 
     private fun verifyKeyOnline() {
         val inputKey = keyInput.text.toString().trim()
         if (inputKey.isEmpty()) {
-            log("Enter key first.")
+            log("ERROR: Enter key first.")
             return
         }
 
@@ -126,18 +127,17 @@ class MainActivity : AppCompatActivity() {
                 val url = URL(remoteKeyUrl)
                 val connection = url.openConnection() as HttpURLConnection
                 connection.requestMethod = "GET"
-                connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Android)")
                 
                 if (connection.responseCode == HttpURLConnection.HTTP_OK) {
                     val serverKey = connection.inputStream.bufferedReader().use { it.readText() }.trim()
                     
                     runOnUiThread {
                         if (inputKey == serverKey) {
-                            log("SUCCESS: Key Verified! Unlocking Dashboard.")
+                            log("SUCCESS: Key Verified!")
                             authScreen.visibility = View.GONE
                             mainDashboard.visibility = View.VISIBLE
                             
-                            if (Shizuku.pingBinder() && Shizuku.checkSelfPermission() == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                            if (Shizuku.pingBinder() && Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED) {
                                 bindService()
                             } else {
                                 requestShizukuPermission()
@@ -149,14 +149,26 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             } catch (e: Exception) {
-                runOnUiThread { log("Auth Failed: ${e.message}") }
+                runOnUiThread { log("Auth Error: ${e.message}") }
             }
         }.start()
     }
 
     private fun requestShizukuPermission() {
-        if (Shizuku.pingBinder() && Shizuku.checkSelfPermission() != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-            Shizuku.requestPermission(requestCode)
+        if (!Shizuku.pingBinder()) {
+            log("ERROR: Shizuku is not running!")
+            return
+        }
+        if (Shizuku.checkSelfPermission() != PackageManager.PERMISSION_GRANTED) {
+            try {
+                Shizuku.requestPermission(requestCode)
+                log("Prompting for Shizuku authorization...")
+            } catch (e: Exception) {
+                log("Permission request error: ${e.message}")
+            }
+        } else {
+            log("Permission already granted.")
+            bindService()
         }
     }
 
@@ -175,7 +187,7 @@ class MainActivity : AppCompatActivity() {
             if (Settings.canDrawOverlays(this)) {
                 doInjectAssets()
             } else {
-                log("ERROR: Overlay permission is required for floating menu.")
+                log("ERROR: Overlay permission is required.")
             }
         }
     }
@@ -186,27 +198,41 @@ class MainActivity : AppCompatActivity() {
 
     private fun bindService() {
         if (service != null) return
+        if (!Shizuku.pingBinder() || Shizuku.checkSelfPermission() != PackageManager.PERMISSION_GRANTED) {
+            log("ERROR: Cannot bind. Check Shizuku status & permissions.")
+            return
+        }
         try {
             Shizuku.bindUserService(userServiceArgs(), serviceConnection)
+            log("Connecting Shizuku background service...")
         } catch (e: Exception) {
-            log("bindUserService failed: ${e.message}")
+            log("Bind exception: ${e.message}")
         }
     }
 
     private fun doInjectAssets() {
+        if (!Shizuku.pingBinder()) {
+            log("ERROR: Shizuku is not running!")
+            return
+        }
+        if (Shizuku.checkSelfPermission() != PackageManager.PERMISSION_GRANTED) {
+            log("ERROR: Grant Shizuku permission first!")
+            requestShizukuPermission()
+            return
+        }
+
         val svc = service
         if (svc == null) {
-            log("Service starting up... connecting to Shizuku...")
+            log("Initializing connection...")
             bindService()
-            
             window.decorView.postDelayed({
                 val retrySvc = service
                 if (retrySvc != null) {
                     executeRemoteDownload(retrySvc)
                 } else {
-                    log("ERROR: Shizuku service failed to connect. Make sure Shizuku is running!")
+                    log("ERROR: Service failed to respond. Check Shizuku app authorization.")
                 }
-            }, 1000)
+            }, 1500)
             return
         }
 
@@ -214,7 +240,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun executeRemoteDownload(svc: IFileInjectorService) {
-        log("Downloading & Activating Proxy from GitHub...")
+        log("Downloading proxy from GitHub...")
         Thread {
             val result = try {
                 svc.injectAssetsFolder()
@@ -224,7 +250,7 @@ class MainActivity : AppCompatActivity() {
 
             runOnUiThread {
                 if (result.isEmpty()) {
-                    log("SUCCESS: Remote File Injected & Proxy Activated!")
+                    log("SUCCESS: Proxy Injected Successfully!")
                     startService(Intent(this, FloatingMenuService::class.java))
                 } else {
                     log(result)

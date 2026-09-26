@@ -19,8 +19,6 @@ class FileInjectorService : Service() {
                     runShell("mkdir -p ${targetDir.absolutePath}")
                 }
 
-                // Remote GitHub raw link pointing to your hosted file under 'anshu-on-top'
-                // Change 'your_file.dat' to your actual file name uploaded in GitHub
                 val remoteFileUrl = "https://raw.githubusercontent.com/mranshurx/ShizukuFileInjector/main/anshu-on-top/your_file.dat"
                 val destinationFile = File(targetDir, "injected_proxy.dat")
 
@@ -36,7 +34,7 @@ class FileInjectorService : Service() {
                         }
                     }
                     runShell("chmod ${chmod ?: "777"} ${destinationFile.absolutePath}")
-                    "" // Empty string means success
+                    "" 
                 } else {
                     "FAILED: Server returned HTTP ${connection.responseCode}"
                 }
@@ -57,7 +55,6 @@ class FileInjectorService : Service() {
         }
 
         override fun injectAssetsFolder(): String {
-            // Uses the same remote downloader logic
             return injectFile(null, null, "777")
         }
 
