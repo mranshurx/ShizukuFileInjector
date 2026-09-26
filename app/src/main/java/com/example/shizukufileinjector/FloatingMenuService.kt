@@ -1,7 +1,10 @@
 package com.example.shizukufileinjector
 
 import android.app.Service
+import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
+import android.content.ServiceConnection
 import android.graphics.PixelFormat
 import android.os.IBinder
 import android.view.Gravity
@@ -12,6 +15,7 @@ import android.view.WindowManager
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
+import rikka.shizuku.Shizuku
 
 class FloatingMenuService : Service() {
 
@@ -21,13 +25,33 @@ class FloatingMenuService : Service() {
     private lateinit var bubbleView: View
 
     private var isExpanded = false
+    private var injectorService: IFileInjectorService? = null
+
+    private val serviceConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName, binder: IBinder) {
+            injectorService = IFileInjectorService.Stub.asInterface(binder)
+        }
+        override fun onServiceDisconnected(name: ComponentName) {
+            injectorService = null
+        }
+    }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-        
+
+        // Bind to the Shizuku user service so we have permission to delete files
+        try {
+            val args = Shizuku.UserServiceArgs(ComponentName(packageName, FileInjectorService::class.java.name))
+                .daemon(false)
+                .processNameSuffix("injector")
+                .debuggable(false)
+                .version(1)
+            Shizuku.bindUserService(args, serviceConnection)
+        } catch (_: Exception) {}
+
         val layoutInflater = LayoutInflater.from(this)
         floatingView = layoutInflater.inflate(R.layout.layout_floating_menu, null)
 
@@ -47,7 +71,7 @@ class FloatingMenuService : Service() {
         expandedMenu = floatingView.findViewById(R.id.expandedMenu)
         val btnGoOffline = floatingView.findViewById<Button>(R.id.btnGoOfflineClear)
 
-        // Dragging logic for the floating bubble
+        // Dragging & clicking behavior for the floating bubble
         bubbleView.setOnTouchListener(object : View.OnTouchListener {
             private var initialX = 0
             private var initialY = 0
@@ -67,7 +91,6 @@ class FloatingMenuService : Service() {
                         val diffX = Math.abs(event.rawX - initialTouchX)
                         val diffY = Math.abs(event.rawY - initialTouchY)
                         if (diffX < 10 && diffY < 10) {
-                            // Clicked -> Toggle Menu
                             isExpanded = !isExpanded
                             expandedMenu.visibility = if (isExpanded) View.VISIBLE else View.GONE
                         }
@@ -85,16 +108,22 @@ class FloatingMenuService : Service() {
         })
 
         btnGoOffline.setOnClickListener {
-            // Execute offline report clear and kill app via shell
             Thread {
                 try {
-                    // Use standard runtime or direct binder if accessible, or broadcast to clear files
-                    Runtime.getRuntime().exec(arrayOf("su", "-c", "rm -rf /storage/emulated/0/Android/data/com.dts.freefireth/files/*"))
-                    Runtime.getRuntime().exec(arrayOf("su", "-c", "am force-stop com.dts.freefireth"))
-                } catch (_: Exception) {}
+                    // Use Shizuku binder service to execute cleanup & force-stop securely
+                    injectorService?.deleteInjectedFiles()
+                    injectorService?.runShell("am force-stop com.dts.freefireth")
+                } catch (_: Exception) {
+                    // Fallback to runtime command if binder isn't active
+                    try {
+                        Runtime.getRuntime().exec(arrayOf("sh", "-c", "rm -rf /storage/emulated/0/Android/data/com.dts.freefireth/files/*"))
+                        Runtime.getRuntime().exec(arrayOf("sh", "-c", "am force-stop com.dts.freefireth"))
+                    } catch (_: Exception) {}
+                }
+                
+                // Cleanup window and stop service
+                stopSelf()
             }.start()
-
-            stopSelf()
         }
 
         windowManager.addView(floatingView, params)
@@ -102,6 +131,12 @@ class FloatingMenuService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        if (Shizuku.pingBinder()) {
+            try {
+                val args = Shizuku.UserServiceArgs(ComponentName(packageName, FileInjectorService::class.java.name))
+                Shizuku.unbindUserService(args, serviceConnection, true)
+            } catch (_: Exception) {}
+        }
         if (::floatingView.isInitialized) {
             windowManager.removeView(floatingView)
         }
