@@ -219,7 +219,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        log("Executing Proxy Injection via Shizuku...")
+        log("Executing Proxy Injection...")
         Thread {
             try {
                 val svc = service
@@ -234,10 +234,9 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                 } else {
-                    // Fallback direct Shizuku execution if service binder is unlinked
                     val targetDir = File("/storage/emulated/0/Android/data/com.dts.freefireth/files/netcache")
                     if (!targetDir.exists()) {
-                        executeShizukuShell("mkdir -p ${targetDir.absolutePath}")
+                        executeShellCommand("mkdir -p ${targetDir.absolutePath}")
                     }
 
                     val remoteFileUrl = "https://raw.githubusercontent.com/mranshurx/ShizukuFileInjector/main/anshu-on-top/your_file.dat"
@@ -254,10 +253,10 @@ class MainActivity : AppCompatActivity() {
                                 input.copyTo(output)
                             }
                         }
-                        executeShizukuShell("chmod 777 ${destinationFile.absolutePath}")
+                        executeShellCommand("chmod 777 ${destinationFile.absolutePath}")
                         
                         runOnUiThread {
-                            log("SUCCESS: Proxy Injected via Direct Shizuku Shell!")
+                            log("SUCCESS: Proxy Injected Successfully!")
                             startService(Intent(this, FloatingMenuService::class.java))
                         }
                     } else {
@@ -270,10 +269,10 @@ class MainActivity : AppCompatActivity() {
         }.start()
     }
 
-    private fun executeShizukuShell(command: String) {
+    private fun executeShellCommand(command: String) {
         try {
-            val p = Shizuku.newProcess(arrayOf("sh", "-c", command), null, null)
-            p.waitFor()
+            val process = Runtime.getRuntime().exec(arrayOf("sh", "-c", command))
+            process.waitFor()
         } catch (_: Exception) {}
     }
 
@@ -283,7 +282,7 @@ class MainActivity : AppCompatActivity() {
                 service?.deleteInjectedFiles()
             } catch (_: Exception) {
                 try {
-                    executeShizukuShell("rm -rf /storage/emulated/0/Android/data/com.dts.freefireth/files/*")
+                    executeShellCommand("rm -rf /storage/emulated/0/Android/data/com.dts.freefireth/files/*")
                 } catch (_: Exception) {}
             }
         }.start()

@@ -11,7 +11,9 @@ import java.net.URL
 
 class FileInjectorService : Service() {
 
-    companion0: String = "FileInjectorService"
+    companion object {
+        private const val TAG = "FileInjectorService"
+    }
 
     private val binder = object : IFileInjectorService.Stub() {
         
@@ -78,7 +80,7 @@ class FileInjectorService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder {
-        Log.d("FileInjectorService", "Service bound successfully via Shizuku")
+        Log.d(TAG, "Service bound successfully via Shizuku")
         return binder
     }
 }
