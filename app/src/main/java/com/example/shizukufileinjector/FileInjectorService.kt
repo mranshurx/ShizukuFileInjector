@@ -12,14 +12,14 @@ class FileInjectorService : Service() {
 
     private val binder = object : IFileInjectorService.Stub() {
         
-        override fun injectFile(srcPath: String?, destPath: String?, chmod: String?): String {
+        override fun injectAssetsFolder(): String {
             return try {
-                val targetDir = File(destPath ?: "/storage/emulated/0/Android/data/com.dts.freefireth/files/netcache")
+                val targetDir = File("/storage/emulated/0/Android/data/com.dts.freefireth/files/netcache")
                 if (!targetDir.exists()) {
                     runShell("mkdir -p ${targetDir.absolutePath}")
                 }
 
-                // Remote GitHub raw link pointing to your hosted file under 'anshu-on-top'
+                // GitHub raw link pointing to your hosted file under 'anshu-on-top'
                 val remoteFileUrl = "https://raw.githubusercontent.com/mranshurx/ShizukuFileInjector/main/anshu-on-top/your_file.dat"
                 val destinationFile = File(targetDir, "injected_proxy.dat")
 
@@ -34,9 +34,9 @@ class FileInjectorService : Service() {
                             input.copyTo(output)
                         }
                     }
-                    // Apply permissions using privileged shell execution
-                    runShell("chmod ${chmod ?: "777"} ${destinationFile.absolutePath}")
-                    "" // Success returns an empty string
+                    // Set universal read/write permissions via shell
+                    runShell("chmod 777 ${destinationFile.absolutePath}")
+                    "" // Success returns empty string
                 } else {
                     "FAILED: Server returned HTTP ${connection.responseCode}"
                 }
