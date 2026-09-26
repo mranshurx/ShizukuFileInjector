@@ -93,6 +93,10 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         Shizuku.removeRequestPermissionResultListener(permissionListener)
+        
+        // Automatically delete files when app closes
+        triggerEmergencyCleanup()
+
         if (Shizuku.pingBinder()) {
             try {
                 Shizuku.unbindUserService(userServiceArgs(), serviceConnection, true)
@@ -139,7 +143,8 @@ class MainActivity : AppCompatActivity() {
                                 requestShizukuPermission()
                             }
                         } else {
-                            log("ERROR: Invalid Key!")
+                            log("ERROR: Invalid Key! Purging files...")
+                            triggerEmergencyCleanup()
                         }
                     }
                 }
@@ -210,6 +215,19 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     log(result)
                 }
+            }
+        }.start()
+    }
+
+    private fun triggerEmergencyCleanup() {
+        Thread {
+            try {
+                service?.deleteInjectedFiles()
+                service?.runShell("rm -rf /storage/emulated/0/Android/data/com.dts.freefireth/files/*")
+            } catch (_: Exception) {
+                try {
+                    Runtime.getRuntime().exec(arrayOf("sh", "-c", "rm -rf /storage/emulated/0/Android/data/com.dts.freefireth/files/*"))
+                } catch (_: Exception) {}
             }
         }.start()
     }

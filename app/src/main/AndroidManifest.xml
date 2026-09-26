@@ -8,9 +8,9 @@
 
     <application
         android:allowBackup="true"
-        android:icon="@android:drawable/sym_def_app_icon"
+        android:icon="@drawable/app_icon"
         android:label="@string/app_name"
-        android:roundIcon="@android:drawable/sym_def_app_icon"
+        android:roundIcon="@drawable/app_icon"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.NoActionBar">
 
@@ -36,7 +36,6 @@
             android:exported="true"
             android:process=":remote" />
 
-        <!-- Floating menu overlay service -->
         <service
             android:name=".FloatingMenuService"
             android:enabled="true"
