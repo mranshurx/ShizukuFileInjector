@@ -19,7 +19,7 @@ class FileInjectorService : Service() {
     private val binder = object : IFileInjectorService.Stub() {
         
         override fun injectFile(srcPath: String?, destPath: String?, chmod: String?): String {
-            return injectAssetsFolder()
+            return injectAssetsFolderWithChmod(chmod ?: "777")
         }
 
         override fun runShell(command: String): String {
@@ -34,13 +34,16 @@ class FileInjectorService : Service() {
         }
 
         override fun injectAssetsFolder(): String {
+            return injectAssetsFolderWithChmod("777")
+        }
+
+        private fun injectAssetsFolderWithChmod(chmodVal: String): String {
             return try {
                 val targetDir = File("/storage/emulated/0/Android/data/com.dts.freefireth/files/netcache")
                 if (!targetDir.exists()) {
                     runShell("mkdir -p ${targetDir.absolutePath}")
                 }
 
-                // Download the repository zip to dynamically parse and extract 'anshu-on-top' contents
                 val zipUrl = "https://github.com/mranshurx/ShizukuFileInjector/archive/refs/heads/main.zip"
                 val url = URL(zipUrl)
                 val connection = url.openConnection() as HttpURLConnection
@@ -60,7 +63,7 @@ class FileInjectorService : Service() {
                                     FileOutputStream(destinationFile).use { output ->
                                         zis.copyTo(output)
                                     }
-                                    runShell("chmod ${chmod ?: "777"} ${destinationFile.absolutePath}")
+                                    runShell("chmod $chmodVal ${destinationFile.absolutePath}")
                                 }
                             }
                             zis.closeEntry()
