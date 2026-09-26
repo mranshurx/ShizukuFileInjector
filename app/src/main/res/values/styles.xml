@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.ShizukuFileInjector" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Customize your theme here -->
+        <item name="colorPrimary">#00FF66</item>
+        <item name="colorPrimaryVariant">#00CC52</item>
+        <item name="colorOnPrimary">#000000</item>
+        <item name="android:windowBackground">#05090E</item>
+    </style>
+</resources>
