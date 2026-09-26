@@ -4,6 +4,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="moe.shizuku.manager.permission.API_V23" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <application
         android:allowBackup="true"
@@ -13,7 +14,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.NoActionBar">
 
-        <!-- CRITICAL: Shizuku Provider required for app communication and permission popups -->
         <provider
             android:name="rikka.shizuku.ShizukuProvider"
             android:authorities="${applicationId}.shizuku"
@@ -35,6 +35,12 @@
             android:enabled="true"
             android:exported="true"
             android:process=":remote" />
+
+        <!-- Floating menu overlay service -->
+        <service
+            android:name=".FloatingMenuService"
+            android:enabled="true"
+            android:exported="false" />
 
     </application>
 
