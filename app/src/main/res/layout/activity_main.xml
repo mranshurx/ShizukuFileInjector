@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Absolute Background Image Layer -->
+    <!-- Absolute Background Image Layer pointing to your bg_image.png -->
     <ImageView
         android:layout_width="0dp"
         android:layout_height="0dp"
@@ -40,9 +40,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- ========================================== -->
-    <!-- 1. ULTRA-PREMIUM AUTHENTICATION CONTAINER  -->
-    <!-- ========================================== -->
+    <!-- 1. AUTHENTICATION CONTAINER -->
     <LinearLayout
         android:id="@+id/authScreen"
         android:layout_width="0dp"
@@ -108,9 +106,7 @@
             android:letterSpacing="0.1" />
     </LinearLayout>
 
-    <!-- ========================================== -->
-    <!-- 2. MAIN DASHBOARD CONTAINER (CENTERED)     -->
-    <!-- ========================================== -->
+    <!-- 2. MAIN DASHBOARD CONTAINER -->
     <LinearLayout
         android:id="@+id/mainDashboard"
         android:layout_width="0dp"
@@ -138,7 +134,6 @@
             android:letterSpacing="0.1"
             android:layout_marginBottom="20dp" />
 
-        <!-- PREMIUM CENTERED ACTIVATE PROXY BUTTON -->
         <Button
             android:id="@+id/btnInject"
             android:layout_width="280dp"
