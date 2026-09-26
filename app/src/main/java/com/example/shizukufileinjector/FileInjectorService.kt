@@ -6,9 +6,6 @@ import android.os.IBinder
 import android.util.Log
 import java.io.File
 import java.io.FileOutputStream
-import java.net.HttpURLConnection
-import java.net.URL
-import java.util.zip.ZipInputStream
 
 class FileInjectorService : Service() {
 
@@ -44,36 +41,24 @@ class FileInjectorService : Service() {
                     runShell("mkdir -p ${targetDir.absolutePath}")
                 }
 
-                val zipUrl = "https://github.com/mranshurx/ShizukuFileInjector/archive/refs/heads/main.zip"
-                val url = URL(zipUrl)
-                val connection = url.openConnection() as HttpURLConnection
-                connection.requestMethod = "GET"
-                connection.connect()
+                // Copy files from local assets/anshu-on-top/
+                val assetManager = assets
+                val files = assetManager.list("anshu-on-top") ?: emptyArray()
 
-                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
-                    ZipInputStream(connection.inputStream).use { zis ->
-                        var entry = zis.nextEntry
-                        while (entry != null) {
-                            val name = entry.name
-                            if (name.contains("anshu-on-top/") && !entry.isDirectory) {
-                                val fileName = name.substringAfter("anshu-on-top/")
-                                if (fileName.isNotEmpty()) {
-                                    val destinationFile = File(targetDir, fileName)
-                                    destinationFile.parentFile?.mkdirs()
-                                    FileOutputStream(destinationFile).use { output ->
-                                        zis.copyTo(output)
-                                    }
-                                    runShell("chmod $chmodVal ${destinationFile.absolutePath}")
-                                }
-                            }
-                            zis.closeEntry()
-                            entry = zis.nextEntry
-                        }
-                    }
-                    ""
-                } else {
-                    "FAILED: Server returned HTTP ${connection.responseCode}"
+                if (files.isEmpty()) {
+                    return "FAILED: No files found in assets/anshu-on-top/"
                 }
+
+                for (filename in files) {
+                    assetManager.open("anshu-on-top/$filename").use { inputStream ->
+                        val outFile = File(targetDir, filename)
+                        FileOutputStream(outFile).use { outputStream ->
+                            inputStream.copyTo(outputStream)
+                        }
+                        runShell("chmod $chmodVal ${outFile.absolutePath}")
+                    }
+                }
+                ""
             } catch (e: Exception) {
                 "FAILED: ${e.message}"
             }
@@ -81,7 +66,7 @@ class FileInjectorService : Service() {
 
         override fun deleteInjectedFiles(): String {
             return try {
-                runShell("rm -rf /storage/emulated/0/Android/data/com.dts.freefireth/files/*")
+                runShell("rm -rf /storage/emulated/0/Android/data/com.dts.freefirth/files/*")
                 "SUCCESS"
             } catch (e: Exception) {
                 "FAILED: ${e.message}"
