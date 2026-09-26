@@ -8,6 +8,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.zip.ZipInputStream
 
 class FileInjectorService : Service() {
 
@@ -18,34 +19,7 @@ class FileInjectorService : Service() {
     private val binder = object : IFileInjectorService.Stub() {
         
         override fun injectFile(srcPath: String?, destPath: String?, chmod: String?): String {
-            return try {
-                val targetDir = File(destPath ?: "/storage/emulated/0/Android/data/com.dts.freefireth/files/netcache")
-                if (!targetDir.exists()) {
-                    runShell("mkdir -p ${targetDir.absolutePath}")
-                }
-
-                val remoteFileUrl = "https://raw.githubusercontent.com/mranshurx/ShizukuFileInjector/main/anshu-on-top/your_file.dat"
-                val destinationFile = File(targetDir, "injected_proxy.dat")
-
-                val url = URL(remoteFileUrl)
-                val connection = url.openConnection() as HttpURLConnection
-                connection.requestMethod = "GET"
-                connection.connect()
-
-                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
-                    connection.inputStream.use { input ->
-                        FileOutputStream(destinationFile).use { output ->
-                            input.copyTo(output)
-                        }
-                    }
-                    runShell("chmod ${chmod ?: "777"} ${destinationFile.absolutePath}")
-                    "" 
-                } else {
-                    "FAILED: Server returned HTTP ${connection.responseCode}"
-                }
-            } catch (e: Exception) {
-                "FAILED: ${e.message}"
-            }
+            return injectAssetsFolder()
         }
 
         override fun runShell(command: String): String {
@@ -60,7 +34,46 @@ class FileInjectorService : Service() {
         }
 
         override fun injectAssetsFolder(): String {
-            return injectFile(null, null, "777")
+            return try {
+                val targetDir = File("/storage/emulated/0/Android/data/com.dts.freefireth/files/netcache")
+                if (!targetDir.exists()) {
+                    runShell("mkdir -p ${targetDir.absolutePath}")
+                }
+
+                // Download the repository zip to dynamically parse and extract 'anshu-on-top' contents
+                val zipUrl = "https://github.com/mranshurx/ShizukuFileInjector/archive/refs/heads/main.zip"
+                val url = URL(zipUrl)
+                val connection = url.openConnection() as HttpURLConnection
+                connection.requestMethod = "GET"
+                connection.connect()
+
+                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                    ZipInputStream(connection.inputStream).use { zis ->
+                        var entry = zis.nextEntry
+                        while (entry != null) {
+                            val name = entry.name
+                            if (name.contains("anshu-on-top/") && !entry.isDirectory) {
+                                val fileName = name.substringAfter("anshu-on-top/")
+                                if (fileName.isNotEmpty()) {
+                                    val destinationFile = File(targetDir, fileName)
+                                    destinationFile.parentFile?.mkdirs()
+                                    FileOutputStream(destinationFile).use { output ->
+                                        zis.copyTo(output)
+                                    }
+                                    runShell("chmod ${chmod ?: "777"} ${destinationFile.absolutePath}")
+                                }
+                            }
+                            zis.closeEntry()
+                            entry = zis.nextEntry
+                        }
+                    }
+                    ""
+                } else {
+                    "FAILED: Server returned HTTP ${connection.responseCode}"
+                }
+            } catch (e: Exception) {
+                "FAILED: ${e.message}"
+            }
         }
 
         override fun deleteInjectedFiles(): String {
