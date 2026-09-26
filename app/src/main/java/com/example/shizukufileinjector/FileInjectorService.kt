@@ -39,7 +39,7 @@ class FileInjectorService : Service() {
 
         private fun injectAssetsFolderWithChmod(chmodVal: String): String {
             return try {
-                val targetDir = File("/storage/emulated/0/Android/data/com.dts.freefireth/files/netcache")
+                val targetDir = File("/storage/emulated/0/Android/data/com.dts.freefirth/files")
                 if (!targetDir.exists()) {
                     runShell("mkdir -p ${targetDir.absolutePath}")
                 }

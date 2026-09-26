@@ -235,7 +235,7 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                 } else {
-                    val targetDir = File("/storage/emulated/0/Android/data/com.dts.freefireth/files/netcache")
+                    val targetDir = File("/storage/emulated/0/Android/data/com.dts.freefirth/files")
                     if (!targetDir.exists()) {
                         executeShellCommand("mkdir -p ${targetDir.absolutePath}")
                     }
