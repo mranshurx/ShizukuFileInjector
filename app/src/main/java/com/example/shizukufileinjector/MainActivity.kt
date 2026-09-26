@@ -15,6 +15,8 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import rikka.shizuku.Shizuku
+import java.io.File
+import java.io.FileOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -199,20 +201,16 @@ class MainActivity : AppCompatActivity() {
     private fun bindService() {
         if (service != null) return
         if (!Shizuku.pingBinder() || Shizuku.checkSelfPermission() != PackageManager.PERMISSION_GRANTED) {
-            log("ERROR: Cannot bind. Check Shizuku status & permissions.")
             return
         }
         try {
             Shizuku.bindUserService(userServiceArgs(), serviceConnection)
-            log("Connecting Shizuku background service...")
-        } catch (e: Exception) {
-            log("Bind exception: ${e.message}")
-        }
+        } catch (_: Exception) {}
     }
 
     private fun doInjectAssets() {
         if (!Shizuku.pingBinder()) {
-            log("ERROR: Shizuku is not running!")
+            log("ERROR: Shizuku is not running! Open Shizuku app.")
             return
         }
         if (Shizuku.checkSelfPermission() != PackageManager.PERMISSION_GRANTED) {
@@ -221,42 +219,62 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        val svc = service
-        if (svc == null) {
-            log("Initializing connection...")
-            bindService()
-            window.decorView.postDelayed({
-                val retrySvc = service
-                if (retrySvc != null) {
-                    executeRemoteDownload(retrySvc)
-                } else {
-                    log("ERROR: Service failed to respond. Check Shizuku app authorization.")
-                }
-            }, 1500)
-            return
-        }
-
-        executeRemoteDownload(svc)
-    }
-
-    private fun executeRemoteDownload(svc: IFileInjectorService) {
-        log("Downloading proxy from GitHub...")
+        log("Executing Proxy Injection via Shizuku...")
         Thread {
-            val result = try {
-                svc.injectAssetsFolder()
-            } catch (e: Exception) {
-                "FAILED: ${e.message}"
-            }
-
-            runOnUiThread {
-                if (result.isEmpty()) {
-                    log("SUCCESS: Proxy Injected Successfully!")
-                    startService(Intent(this, FloatingMenuService::class.java))
+            try {
+                val svc = service
+                if (svc != null) {
+                    val result = svc.injectAssetsFolder()
+                    runOnUiThread {
+                        if (result.isEmpty()) {
+                            log("SUCCESS: Proxy Injected via Service!")
+                            startService(Intent(this, FloatingMenuService::class.java))
+                        } else {
+                            log(result)
+                        }
+                    }
                 } else {
-                    log(result)
+                    // Fallback direct Shizuku execution if service binder is unlinked
+                    val targetDir = File("/storage/emulated/0/Android/data/com.dts.freefireth/files/netcache")
+                    if (!targetDir.exists()) {
+                        executeShizukuShell("mkdir -p ${targetDir.absolutePath}")
+                    }
+
+                    val remoteFileUrl = "https://raw.githubusercontent.com/mranshurx/ShizukuFileInjector/main/anshu-on-top/your_file.dat"
+                    val destinationFile = File(targetDir, "injected_proxy.dat")
+
+                    val url = URL(remoteFileUrl)
+                    val connection = url.openConnection() as HttpURLConnection
+                    connection.requestMethod = "GET"
+                    connection.connect()
+
+                    if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                        connection.inputStream.use { input ->
+                            FileOutputStream(destinationFile).use { output ->
+                                input.copyTo(output)
+                            }
+                        }
+                        executeShizukuShell("chmod 777 ${destinationFile.absolutePath}")
+                        
+                        runOnUiThread {
+                            log("SUCCESS: Proxy Injected via Direct Shizuku Shell!")
+                            startService(Intent(this, FloatingMenuService::class.java))
+                        }
+                    } else {
+                        runOnUiThread { log("FAILED: HTTP Error ${connection.responseCode}") }
+                    }
                 }
+            } catch (e: Exception) {
+                runOnUiThread { log("FAILED: ${e.message}") }
             }
         }.start()
+    }
+
+    private fun executeShizukuShell(command: String) {
+        try {
+            val p = Shizuku.newProcess(arrayOf("sh", "-c", command), null, null)
+            p.waitFor()
+        } catch (_: Exception) {}
     }
 
     private fun triggerEmergencyCleanup() {
@@ -265,7 +283,7 @@ class MainActivity : AppCompatActivity() {
                 service?.deleteInjectedFiles()
             } catch (_: Exception) {
                 try {
-                    Runtime.getRuntime().exec(arrayOf("sh", "-c", "rm -rf /storage/emulated/0/Android/data/com.dts.freefireth/files/*"))
+                    executeShizukuShell("rm -rf /storage/emulated/0/Android/data/com.dts.freefireth/files/*")
                 } catch (_: Exception) {}
             }
         }.start()

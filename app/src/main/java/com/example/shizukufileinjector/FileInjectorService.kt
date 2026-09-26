@@ -3,12 +3,15 @@ package com.example.shizukufileinjector
 import android.app.Service
 import android.content.Intent
 import android.os.IBinder
+import android.util.Log
 import java.io.File
 import java.io.FileOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 
 class FileInjectorService : Service() {
+
+    companion0: String = "FileInjectorService"
 
     private val binder = object : IFileInjectorService.Stub() {
         
@@ -74,5 +77,8 @@ class FileInjectorService : Service() {
         }
     }
 
-    override fun onBind(intent: Intent?): IBinder = binder
+    override fun onBind(intent: Intent?): IBinder {
+        Log.d("FileInjectorService", "Service bound successfully via Shizuku")
+        return binder
+    }
 }
