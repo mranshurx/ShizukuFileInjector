@@ -196,10 +196,24 @@ class MainActivity : AppCompatActivity() {
     private fun doInjectAssets() {
         val svc = service
         if (svc == null) {
-            log("ERROR: Service not connected!")
+            log("Service starting up... connecting to Shizuku...")
+            bindService()
+            
+            window.decorView.postDelayed({
+                val retrySvc = service
+                if (retrySvc != null) {
+                    executeRemoteDownload(retrySvc)
+                } else {
+                    log("ERROR: Shizuku service failed to connect. Make sure Shizuku is running!")
+                }
+            }, 1000)
             return
         }
 
+        executeRemoteDownload(svc)
+    }
+
+    private fun executeRemoteDownload(svc: IFileInjectorService) {
         log("Downloading & Activating Proxy from GitHub...")
         Thread {
             val result = try {
