@@ -3,7 +3,6 @@ package com.example.shizukufileinjector
 import android.app.Service
 import android.content.Intent
 import android.os.IBinder
-import rikka.shizuku.Shizuku
 import java.io.File
 import java.io.FileOutputStream
 import java.net.HttpURLConnection
@@ -12,14 +11,15 @@ import java.net.URL
 class FileInjectorService : Service() {
 
     private val binder = object : IFileInjectorService.Stub() {
-        override fun injectAssetsFolder(): String {
+        
+        override fun injectFile(srcPath: String?, destPath: String?, chmod: String?): String {
             return try {
-                val targetDir = File("/storage/emulated/0/Android/data/com.dts.freefireth/files/netcache") // Adjust path if needed
+                val targetDir = File(destPath ?: "/storage/emulated/0/Android/data/com.dts.freefireth/files/netcache")
                 if (!targetDir.exists()) {
                     runShell("mkdir -p ${targetDir.absolutePath}")
                 }
 
-                // Example: Replace with your actual raw GitHub link to the hosted file in 'anshu-on-top'
+                // Remote GitHub raw link pointing to your hosted file under 'anshu-on-top'
                 val remoteFileUrl = "https://raw.githubusercontent.com/mranshurx/ShizukuFileInjector/main/anshu-on-top/your_file.dat"
                 val destinationFile = File(targetDir, "injected_proxy.dat")
 
@@ -34,9 +34,9 @@ class FileInjectorService : Service() {
                             input.copyTo(output)
                         }
                     }
-                    // Set permissions using Shizuku shell so the game can read it
-                    runShell("chmod 777 ${destinationFile.absolutePath}")
-                    "" // Empty string means success
+                    // Apply permissions using privileged shell execution
+                    runShell("chmod ${chmod ?: "777"} ${destinationFile.absolutePath}")
+                    "" // Success returns an empty string
                 } else {
                     "FAILED: Server returned HTTP ${connection.responseCode}"
                 }
@@ -45,15 +45,18 @@ class FileInjectorService : Service() {
             }
         }
 
-        override fun deleteInjectedFiles() {
-            try {
+        override fun deleteInjectedFiles(): String {
+            return try {
                 runShell("rm -rf /storage/emulated/0/Android/data/com.dts.freefireth/files/*")
-            } catch (_: Exception) {}
+                "SUCCESS"
+            } catch (e: Exception) {
+                "FAILED: ${e.message}"
+            }
         }
 
         override fun runShell(command: String): String {
             return try {
-                val process = Shizuku.newProcess(arrayOf("sh", "-c", command), null, null)
+                val process = Runtime.getRuntime().exec(arrayOf("sh", "-c", command))
                 val output = process.inputStream.bufferedReader().use { it.readText() }
                 process.waitFor()
                 output
